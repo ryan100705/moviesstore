@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>{{ template_data.title }}</h2>
+
+<p><strong>Average rating:</strong> ⭐ {{ template_data.average_rating }}/5</p>
+
+<form method="POST">
+  {% csrf_token %}
+  <label for="id_value">Your rating:</label>
+  {{ template_data.form.value }}
+  <button type="submit" class="btn btn-primary">Submit Rating</button>
+</form>
+
+<a href="{% url 'movies.show' template_data.movie.id %}">Back to movie</a>
+{% endblock %}

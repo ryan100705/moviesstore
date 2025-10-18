@@ -1,10 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Movie, Review
+from .models import Movie, Review, Rating
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.db.models import Sum
 from cart.models import Item
 from django.contrib.auth.decorators import login_required
+from .forms import RatingForm               # make sure RatingForm exists
 
 def index(request):
     search_term = request.GET.get('search')
@@ -138,3 +139,32 @@ def region_top(request, region_code):
         my_recent = [{"title": r['movie__name'], "count": int(r['count'])} for r in my_rows]
 
     return JsonResponse({"region_code": region_code, "top_movies": top_list, "my_recent": my_recent})
+
+@login_required
+def rate_movie(request, id):
+    movie = get_object_or_404(Movie, id=id)
+
+    try:
+        rating = Rating.objects.get(user=request.user, movie=movie)
+    except Rating.DoesNotExist:
+        rating = None
+
+    if request.method == 'POST':
+        form = RatingForm(request.POST, instance=rating)
+        if form.is_valid():
+            new_rating = form.save(commit=False)
+            new_rating.user = request.user
+            new_rating.movie = movie
+            new_rating.save()
+            return redirect('movies.show', id=id)
+    else:
+        form = RatingForm(instance=rating)
+
+    template_data = {
+        'title': f'Rate {movie.name}',
+        'movie': movie,
+        'form': form,
+        'average_rating': movie.average_rating(),
+    }
+
+    return render(request, 'movies/rate_movie.html', {'template_data': template_data})

@@ -9,6 +9,20 @@
         <hr />
         <p><b>Description:</b> {{  template_data.movie.description }}</p>
         <p><b>Price:</b> ${{  template_data.movie.price }}</p>
+        <!-- ⭐ Rating section -->
+        <hr>
+        <h4>Average Rating: ⭐ {{ template_data.movie.average_rating }}/5</h4>
+
+        {% if user.is_authenticated %}
+          <form method="post" action="{% url 'movies.rate' template_data.movie.id %}">
+            {% csrf_token %}
+            {{ template_data.form.value }}
+            <button type="submit" class="btn btn-warning mt-2">Submit Rating</button>
+          </form>
+        {% else %}
+          <p><em><a href="{% url 'login' %}">Log in</a> to rate this movie.</em></p>
+        {% endif %}
+        <hr>
         <p class="card-text">
           <form method="post" action="{% url 'cart.add' id=template_data.movie.id %}">
             <div class="row">

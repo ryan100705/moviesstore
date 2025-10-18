@@ -8,6 +8,10 @@ class Movie(models.Model):
     image = models.ImageField(upload_to='movie_images/')
     def __str__(self):
         return str(self.id) + ' - ' + self.name
+    def average_rating(self):
+        ratings = self.ratings.all()
+        return round(sum(r.value for r in ratings) / ratings.count(), 1) if ratings.exists() else 0
+
     
 class Review(models.Model):
     id = models.AutoField(primary_key=True)
@@ -19,3 +23,14 @@ class Review(models.Model):
     def __str__(self):
         return str(self.id) + ' - ' + self.movie.name
     
+class Rating(models.Model):
+    id = models.AutoField(primary_key=True)
+    value = models.IntegerField(choices=[(i, i) for i in range(1, 6)])  # 1–5 stars
+    movie = models.ForeignKey(Movie, related_name='ratings', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    
+    class Meta:
+        unique_together = ('movie', 'user')  # user can rate a movie only once
+    
+    def __str__(self):
+        return f"{self.movie.name} - {self.value} stars by {self.user.username}"

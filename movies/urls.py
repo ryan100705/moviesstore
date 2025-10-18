@@ -12,4 +12,7 @@ urlpatterns = [
         views.delete_review, name='movies.delete_review'),
     path('<int:id>/review/<int:review_id>/report/',
         views.report_review, name='movies.report_review'),
+    path('map/', views.local_popularity_map, name='movies.local_map'),
+    path('map/data/', views.map_data, name='movies.map_data'),
+    path('map/region/<str:region_code>/', views.region_top, name='movies.region_top'),
 ]

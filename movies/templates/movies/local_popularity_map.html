@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ template_data.title|default:"Local Popularity Map" }}{% endblock %}
+
+{% block content %}
+<!-- Self-contained CSS/JS so base.html blocks aren't required -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"/>
+<style>
+  #map { height: 520px; border-radius: 12px; margin-bottom: 1rem; }
+  .sidebar { max-height: 520px; overflow-y:auto; }
+</style>
+
+<div class="container py-3">
+  <h2 class="mb-3">Local Popularity Map</h2>
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div id="map"></div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card sidebar">
+        <div class="card-body">
+          <h5 class="card-title">Region Details</h5>
+          <div id="region-panel" class="small text-muted">Click a marker to see top movies here.</div>
+          <div id="compare-panel" class="mt-3"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
+<script>
+  // Ensure Leaflet is loaded before running
+  document.addEventListener('DOMContentLoaded', function () {
+    function init() {
+      if (typeof L === 'undefined') { return setTimeout(init, 50); }
+      const map = L.map('map').setView([39.8283, -98.5795], 4);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(map);
+
+      fetch("{% url 'movies.map_data' %}")
+        .then(r => r.json())
+        .then(data => {
+          if (!data || !data.regions) return;
+          let anyMarker = false;
+          data.regions.forEach(region => {
+            const coords = region.coords || { lat: 39.8283, lng: -98.5795 }; // fallback center
+            const m = L.marker([coords.lat, coords.lng]).addTo(map);
+            anyMarker = true;
+            const top = (region.top_movies || []).map(mv => `${mv.title} (${mv.count})`).join('<br>') || 'No data';
+            m.bindPopup(`<b>${region.region_code || 'Unknown'}</b><br>${top}`);
+            m.on('click', () => loadRegion(region.region_code || 'Unknown'));
+          });
+          if (!anyMarker) {
+            // keep map visible even with no markers
+            L.circleMarker([39.8283, -98.5795]).addTo(map).bindPopup('No purchase data yet.');
+          }
+        });
+    }
+
+    function loadRegion(code) {
+      fetch(`/movies/map/region/${encodeURIComponent(code)}/`)
+        .then(r => r.json())
+        .then(d => {
+          const panel = document.getElementById('region-panel');
+          const compare = document.getElementById('compare-panel');
+          const list = (d.top_movies || []).map(x =>
+            `<li class="list-group-item d-flex justify-content-between">
+              <span>${x.title}</span><span class="badge bg-dark">${x.count}</span>
+            </li>`).join('');
+          panel.innerHTML = `<h6 class="mb-2">Top in ${d.region_code}</h6>
+            <ul class="list-group list-group-flush">${list || '<li class="list-group-item">No data.</li>'}</ul>`;
+
+          if (d.my_recent && d.my_recent.length) {
+            const mine = d.my_recent.map(x =>
+              `<li class="list-group-item d-flex justify-content-between">
+                <span>${x.title}</span><span class="badge bg-secondary">${x.count}</span>
+              </li>`).join('');
+            compare.innerHTML = `<h6 class="mt-3">Your recent purchases</h6>
+              <ul class="list-group list-group-flush">${mine}</ul>`;
+          } else {
+            compare.innerHTML = '';
+          }
+        });
+    }
+
+    init();
+  });
+</script>
+{% endblock %}

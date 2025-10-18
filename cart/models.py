@@ -5,6 +5,10 @@ class Order(models.Model):
     id = models.AutoField(primary_key=True)
     total = models.IntegerField()
     date = models.DateTimeField(auto_now_add=True)
+    city = models.CharField(max_length=128, blank=True, default="")
+    state = models.CharField(max_length=64, blank=True, default="")
+    region_code = models.CharField(max_length=64, blank=True, default="")
+
     user = models.ForeignKey(User,
         on_delete=models.CASCADE)
     def __str__(self):

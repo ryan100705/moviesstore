@@ -1,6 +1,9 @@
 from django.contrib.auth.forms import UserCreationForm
 from django.forms.utils import ErrorList
 from django.utils.safestring import mark_safe
+from django import forms
+from .models import Profile
+
 class CustomErrorList(ErrorList):
     def __str__(self):
         if not self:
@@ -15,3 +18,18 @@ class CustomUserCreationForm(UserCreationForm):
             self.fields[fieldname].widget.attrs.update(
                 {'class': 'form-control'}
             )
+
+# NEW FORM for profile picture
+class ProfilePictureForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ['profile_picture']
+        widgets = {
+            'profile_picture': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*'
+            })
+        }
+        labels = {
+            'profile_picture': 'Choose Profile Picture'
+        }

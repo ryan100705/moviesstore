@@ -1,5 +1,14 @@
 {% extends 'base.html' %}
 {% block content %}
+<style>
+  .blurred-image {
+    filter: blur(5px);
+  }
+  .blocked-movie {
+    pointer-events: none;
+  }
+</style>
+
 {% load static %}
 <div class="p-3">
   <div class="container">
@@ -28,7 +37,22 @@
       </div>
     </div>
     <div class="row">
-      {% for movie in template_data.movies %}
+{% for movie in template_data.movies %}
+      {% if movie.id in template_data.blocked_movie_ids %}
+      <div class="col-md-4 col-lg-3 mb-2">
+        <div class="p-2 card align-items-center pt-4 blocked-movie">
+          <img src="{{ movie.image.url }}" class="card-img-top rounded img-card-200 blurred-image">
+          <div class="card-body text-center">
+            <button class="btn btn-secondary" disabled>
+              {{ movie.name }} (Blocked)
+            </button>
+            <div class="small text-muted mt-1">
+              Above your max content rating ({{ template_data.user_max_content_rating }})
+            </div>
+          </div>
+        </div>
+      </div>
+      {% else %}
       <div class="col-md-4 col-lg-3 mb-2">
         <div class="p-2 card align-items-center pt-4">
           <img src="{{ movie.image.url }}" class="card-img-top rounded img-card-200">
@@ -39,7 +63,9 @@
           </div>
         </div>
       </div>
-      {% endfor %}
+      {% endif %}
+{% endfor %}
+
     </div>
   </div>
 </div>

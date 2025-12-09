@@ -7,17 +7,40 @@ from cart.models import Item
 from django.contrib.auth.decorators import login_required
 from .forms import RatingForm               # make sure RatingForm exists
 
+CONTENT_RATING_ORDER = {'G': 0, 'PG': 1, 'PG-13': 2, 'R': 3}
+
+
 def index(request):
     search_term = request.GET.get('search')
     if search_term:
         movies = Movie.objects.filter(name__icontains=search_term)
     else:
         movies = Movie.objects.all()
+
+    # Default: show everything (R = most permissive)
+    user_max = 'R'
+    if request.user.is_authenticated and hasattr(request.user, 'profile') and request.user.profile.max_content_rating:
+        user_max = request.user.profile.max_content_rating
+
+    user_max_value = CONTENT_RATING_ORDER.get(user_max, CONTENT_RATING_ORDER['R'])
+
+    blocked_movie_ids = []
+    for m in movies:
+        movie_value = CONTENT_RATING_ORDER.get(
+            getattr(m, 'content_rating', 'R'),
+            CONTENT_RATING_ORDER['R']
+        )
+        if movie_value > user_max_value:
+            blocked_movie_ids.append(m.id)
+
     template_data = {}
     template_data['title'] = 'Movies'
     template_data['movies'] = movies
-    return render(request, 'movies/index.html',
-                  {'template_data': template_data})
+    template_data['blocked_movie_ids'] = blocked_movie_ids
+    template_data['user_max_content_rating'] = user_max
+
+    return render(request, 'movies/index.html', {'template_data': template_data})
+
 
 def show(request, id):
     movie =  Movie.objects.get(id=id)
